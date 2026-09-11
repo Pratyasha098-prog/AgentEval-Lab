@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "user_task": "Schedule a Team Meeting on 2026-09-10 at 10:00",
+    "expected_tool": "create_event",
+    "expected_arguments": {
+      "name": "Team Meeting",
+      "date": "2026-09-10",
+      "time": "10:00"
+    }
+  },
+  {
+    "id": 2,
+    "user_task": "Schedule a Doctor Appointment on 2026-09-12 at 16:00",
+    "expected_tool": "create_event",
+    "expected_arguments": {
+      "name": "Doctor Appointment",
+      "date": "2026-09-12",
+      "time": "16:00"
+    }
+  },
+  {
+    "id": 3,
+    "user_task": "Schedule an Interview on 2026-09-15 at 09:30",
+    "expected_tool": "create_event",
+    "expected_arguments": {
+      "name": "Interview",
+      "date": "2026-09-15",
+      "time": "09:30"
+    }
+  }
+]

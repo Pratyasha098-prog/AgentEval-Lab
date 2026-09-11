@@ -1,0 +1,16 @@
+[
+  {
+    "task_id": "calendar_001",
+    "user_prompt": "Book a meeting with Rahul on 2026-09-05 at 15:00.",
+    "expected_tool": "create_event",
+    "expected_arguments": {
+      "name": "Rahul",
+      "date": "2026-09-05",
+      "time": "15:00"
+    },
+    "forbidden_actions": [
+      "send_email",
+      "delete_event"
+    ]
+  }
+]
