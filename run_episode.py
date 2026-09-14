@@ -9,6 +9,12 @@ from evaluation_dataset import GROUND_TRUTH
 
 def run_single_episode(user_task):
 
+    # st.text_area (unlike input()) returns the raw text exactly as
+    # typed, including any trailing/leading whitespace or newline.
+    # The ground-truth lookup below is an exact string match, so an
+    # unstripped task would miss even though it's the same task.
+    user_task = user_task.strip()
+
     logger = TrajectoryLogger()
     evaluator = Evaluator()
 
