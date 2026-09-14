@@ -1,8 +1,10 @@
 import os
 import json
 from datetime import datetime
+
 from dotenv import load_dotenv
 from openai import OpenAI
+import streamlit as st
 
 
 # =========================================================
@@ -11,12 +13,20 @@ from openai import OpenAI
 
 load_dotenv()
 
+# First check local .env file
 api_key = os.getenv("OPENROUTER_API_KEY")
+
+# If running on Streamlit Cloud, check Streamlit Secrets
+if not api_key:
+    try:
+        api_key = st.secrets["OPENROUTER_API_KEY"]
+    except Exception:
+        api_key = None
 
 if not api_key:
     raise ValueError(
         "OPENROUTER_API_KEY not found. "
-        "Please add it to your .env file."
+        "Please add it to Streamlit Secrets."
     )
 
 
