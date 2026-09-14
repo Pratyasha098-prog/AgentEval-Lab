@@ -1,6 +1,6 @@
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from openai import (
@@ -81,12 +81,21 @@ if not api_key:
 # very long time before anything is reported to the user.
 REQUEST_TIMEOUT_SECONDS = 30
 
-# nvidia/nemotron-3.5-lightning:free was measured to take anywhere
-# from ~45s to 140s+ (occasionally not responding at all within
-# 120s) on OpenRouter's shared free pool, which is what caused the
-# Streamlit UI to appear stuck. nex-agi/nex-n2.5-mini:free is also
-# free and OpenAI-compatible, and consistently responded in ~1-4s
-# across repeated live test calls.
+# Model selection notes (re-verified live against OpenRouter):
+# - nvidia/nemotron-3.5-lightning:free took anywhere from ~45s to
+#   140s+ (occasionally not responding at all within 120s), which is
+#   what originally caused the Streamlit UI to appear stuck.
+# - google/gemma-4-31b-it:free returned its own upstream 429
+#   ("temporarily rate-limited upstream") on the very first call,
+#   independent of OpenRouter's account-wide free quota.
+# - nex-agi/nex-n2.5-mini:free consistently responded in ~1-4s across
+#   many repeated live calls, with no provider-side throttling seen.
+# It remains the best available option. Note that OpenRouter also
+# enforces a separate, account-wide daily cap shared across every
+# ":free" model (50 requests/day with no purchased credits) -- no
+# choice of free model can raise or bypass that cap; see the
+# RateLimitError handling below for how that specific case is
+# reported.
 MODEL_NAME = "nex-agi/nex-n2.5-mini:free"
 
 client = OpenAI(
@@ -100,6 +109,29 @@ client = OpenAI(
 # =========================================================
 # AI AGENT
 # =========================================================
+
+def _rate_limit_reset_message(error):
+    """Best-effort human-readable reset time for a 429, read from
+    OpenRouter's X-RateLimit-Reset response header (epoch ms)."""
+
+    try:
+        reset_ms = error.response.headers.get("x-ratelimit-reset")
+
+        if not reset_ms:
+            return ""
+
+        reset_time = datetime.fromtimestamp(
+            int(reset_ms) / 1000,
+            tz=timezone.utc
+        )
+
+        return (
+            f" It resets at "
+            f"{reset_time.strftime('%Y-%m-%d %H:%M UTC')}."
+        )
+    except Exception:
+        return ""
+
 
 def extract_event_details(user_task):
 
@@ -193,10 +225,16 @@ User request:
             "Check your internet connection or OpenRouter's status "
             "page, then try again."
         )
-    except RateLimitError:
+    except RateLimitError as error:
         raise AgentRateLimitError(
-            "OpenRouter rate limit reached for this free-tier model. "
-            "Wait a moment and try again."
+            "OpenRouter's free-tier daily quota (50 requests/day, "
+            "shared across all free models on this account) has "
+            "been used up. This is an account-wide limit, not "
+            "specific to the current model, so switching models "
+            "will not bypass it -- add credits at "
+            "openrouter.ai/settings/credits to raise the limit, or "
+            "wait for the daily reset."
+            + _rate_limit_reset_message(error)
         )
     except OpenAIError as error:
         raise AgentAPIError(
