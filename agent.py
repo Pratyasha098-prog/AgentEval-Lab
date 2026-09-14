@@ -1,22 +1,23 @@
+````python
 import os
 import json
 from datetime import datetime
 
+import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
-import streamlit as st
 
 
 # =========================================================
-# LOAD ENVIRONMENT
+# LOAD API KEY
 # =========================================================
 
 load_dotenv()
 
-# First check local .env file
+# Local development: read from .env
 api_key = os.getenv("OPENROUTER_API_KEY")
 
-# If running on Streamlit Cloud, check Streamlit Secrets
+# Streamlit Cloud: read from Secrets
 if not api_key:
     try:
         api_key = st.secrets["OPENROUTER_API_KEY"]
@@ -26,7 +27,7 @@ if not api_key:
 if not api_key:
     raise ValueError(
         "OPENROUTER_API_KEY not found. "
-        "Please add it to Streamlit Secrets."
+        "Please add it to Streamlit Cloud Secrets."
     )
 
 
@@ -136,9 +137,7 @@ User request:
 
 if __name__ == "__main__":
 
-    task = input(
-        "Enter calendar task: "
-    )
+    task = input("Enter calendar task: ")
 
     result = extract_event_details(task)
 
@@ -150,3 +149,4 @@ if __name__ == "__main__":
             indent=4
         )
     )
+````
