@@ -2,6 +2,13 @@ import streamlit as st
 import json
 
 from run_episode import run_single_episode
+from agent import (
+    AgentAuthenticationError,
+    AgentTimeoutError,
+    AgentConnectionError,
+    AgentRateLimitError,
+    AgentAPIError,
+)
 
 
 # =========================================================
@@ -571,6 +578,46 @@ if st.button(
                     "No evaluations available yet."
                 )
 
+
+        except AgentAuthenticationError as error:
+
+            st.error(
+                "🔑 Authentication with OpenRouter failed."
+            )
+
+            st.caption(str(error))
+
+        except AgentTimeoutError as error:
+
+            st.error(
+                "⏱️ The OpenRouter request timed out."
+            )
+
+            st.caption(str(error))
+
+        except AgentConnectionError as error:
+
+            st.error(
+                "🌐 Could not reach OpenRouter."
+            )
+
+            st.caption(str(error))
+
+        except AgentRateLimitError as error:
+
+            st.error(
+                "🚦 OpenRouter rate limit reached."
+            )
+
+            st.caption(str(error))
+
+        except AgentAPIError as error:
+
+            st.error(
+                "❌ The OpenRouter API returned an error."
+            )
+
+            st.caption(str(error))
 
         except Exception as error:
 
