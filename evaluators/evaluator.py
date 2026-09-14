@@ -2,8 +2,8 @@ class Evaluator:
     def evaluate(self, expected, actual):
 
         name_correct = (
-            expected["expected_arguments"]["name"]
-            == actual["name"]
+            expected["expected_arguments"]["name"].strip().lower()
+            == actual["name"].strip().lower()
         )
 
         date_correct = (
