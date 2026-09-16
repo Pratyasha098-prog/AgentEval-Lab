@@ -41,6 +41,10 @@ class AgentAPIError(RuntimeError):
     """Any other error returned by the OpenRouter API."""
 
 
+class AgentInvalidResponseError(RuntimeError):
+    """OpenRouter returned an empty, malformed, or non-JSON response."""
+
+
 # =========================================================
 # LOAD API KEY
 # =========================================================
@@ -241,14 +245,37 @@ User request:
             f"OpenRouter request failed: {error}"
         )
 
-    content = response.choices[0].message.content.strip()
+    try:
+        content = response.choices[0].message.content.strip()
+    except (IndexError, AttributeError) as error:
+        raise AgentInvalidResponseError(
+            "OpenRouter returned an empty or malformed response. "
+            "Please try again."
+        ) from error
+
+    if not content:
+        raise AgentInvalidResponseError(
+            "OpenRouter returned an empty response. Please try again."
+        )
 
     if content.startswith("```"):
         content = content.replace("```json", "")
         content = content.replace("```", "")
         content = content.strip()
 
-    result = json.loads(content)
+    try:
+        result = json.loads(content)
+    except json.JSONDecodeError as error:
+        raise AgentInvalidResponseError(
+            "OpenRouter returned a response that was not valid JSON. "
+            "Please try again."
+        ) from error
+
+    if not isinstance(result, dict):
+        raise AgentInvalidResponseError(
+            "OpenRouter returned an unexpected response format. "
+            "Please try again."
+        )
 
     return result
 

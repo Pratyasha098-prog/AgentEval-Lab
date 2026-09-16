@@ -7,6 +7,13 @@ from evaluators.evaluator import Evaluator
 from evaluation_dataset import GROUND_TRUTH
 
 
+class GroundTruthNotFoundError(LookupError):
+    """No ground-truth entry matches the given user task."""
+
+
+REQUIRED_FIELDS = ("name", "date", "time")
+
+
 def run_single_episode(user_task):
 
     # st.text_area (unlike input()) returns the raw text exactly as
@@ -46,6 +53,34 @@ def run_single_episode(user_task):
             "score": None
         }
 
+    # Step 2b: Validate the extraction before creating a calendar event.
+    # A malformed or incomplete "success" response (missing/empty
+    # fields) must never reach the calendar tool.
+    missing_fields = [
+        field
+        for field in REQUIRED_FIELDS
+        if not details.get(field)
+    ]
+
+    if details.get("status") != "success" or missing_fields:
+
+        logger.log(
+            "invalid_extraction",
+            {
+                "extracted_details": details,
+                "missing_fields": missing_fields
+            }
+        )
+
+        logger.save()
+
+        return {
+            "status": "invalid_extraction",
+            "extracted_details": details,
+            "calendar_result": None,
+            "score": None
+        }
+
     # Step 3: Calendar Tool
     result = create_event(
         name=details["name"],
@@ -61,7 +96,7 @@ def run_single_episode(user_task):
     # Step 4: Evaluation
     # Use independent ground truth instead of AI output
     if user_task not in GROUND_TRUTH:
-        raise ValueError(
+        raise GroundTruthNotFoundError(
             "No ground truth found for this task."
         )
 
@@ -123,6 +158,16 @@ def main():
             ", ".join(
                 result["extracted_details"]["missing"]
             )
+        )
+
+        return
+
+    # Handle invalid/incomplete extraction
+    if result["status"] == "invalid_extraction":
+
+        print(
+            "\n❌ AI extraction was invalid or incomplete. "
+            "No calendar event was created."
         )
 
         return

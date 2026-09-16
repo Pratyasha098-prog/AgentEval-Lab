@@ -1,13 +1,14 @@
 import streamlit as st
 import json
 
-from run_episode import run_single_episode
+from run_episode import run_single_episode, GroundTruthNotFoundError
 from agent import (
     AgentAuthenticationError,
     AgentTimeoutError,
     AgentConnectionError,
     AgentRateLimitError,
     AgentAPIError,
+    AgentInvalidResponseError,
 )
 
 
@@ -181,6 +182,49 @@ if st.button(
                 st.caption(
                     "The agent correctly avoided creating "
                     "an incomplete calendar event."
+                )
+
+
+            # =================================================
+            # HANDLE INVALID / INCOMPLETE EXTRACTION
+            # =================================================
+
+            elif result["status"] == "invalid_extraction":
+
+                st.error(
+                    "❌ AI response was invalid or incomplete."
+                )
+
+                st.caption(
+                    "The extracted data was missing required "
+                    "fields (name, date, or time), so no "
+                    "calendar event was created."
+                )
+
+                st.json(
+                    result["extracted_details"]
+                )
+
+                st.divider()
+
+                st.subheader(
+                    "🔄 Agent Workflow"
+                )
+
+                st.write(
+                    """
+                    **User Task**
+                    ↓
+                    **OpenRouter AI Agent**
+                    ↓
+                    **Invalid/Incomplete Response Detected**
+                    ↓
+                    **Calendar Tool Skipped**
+                    """
+                )
+
+                st.success(
+                    "✅ Calendar Tool was not executed."
                 )
 
 
@@ -619,10 +663,31 @@ if st.button(
 
             st.caption(str(error))
 
+        except AgentInvalidResponseError as error:
+
+            st.error(
+                "❌ AI service returned an invalid response."
+            )
+
+            st.caption(str(error))
+
+        except GroundTruthNotFoundError as error:
+
+            st.error(
+                "📋 No ground truth found for this task."
+            )
+
+            st.caption(
+                "Please enter one of the exact sample tasks, "
+                "e.g. \"Schedule a Team Meeting on "
+                "2026-09-10 at 10:00\"."
+            )
+
         except Exception as error:
 
             st.error(
-                "❌ Agent execution failed."
+                "❌ Agent execution failed unexpectedly."
             )
 
-            st.exception(error)
+            with st.expander("Technical details"):
+                st.code(str(error))
