@@ -407,6 +407,24 @@ The project also includes a Streamlit interface for interacting with the agent a
 
 The interface is intended to make the evaluation workflow easier to demonstrate without requiring users to interact directly with Python code.
 
+### Demo Mode and Live AI Mode
+
+AgentEval-Lab supports two execution modes:
+
+**1. Demo Mode**
+- Runs without an API key.
+- Allows users to test the evaluation workflow without API costs.
+- Useful for demonstrations and offline testing.
+
+**2. Live AI Mode**
+- Connects to an LLM through OpenRouter.
+- Uses a real AI model to process calendar requests.
+- Provides clear error messages when API requests fail.
+
+Both modes support the agent evaluation workflow.
+
+**Note:** The calendar tool is simulated and does not create events in a real Google Calendar.
+
 ---
 
 ## Key Engineering Concepts Demonstrated
