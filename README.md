@@ -237,7 +237,7 @@ All wrong      → 0/3
 Current automated test result:
 
 ```text
-11 passed
+100 passed
 ```
 
 The test suite covers:
@@ -252,7 +252,7 @@ tests/test_schema.py
 
 The project currently passes:
 
-**11/11 tests**
+**100/100 tests**
 
 ---
 
@@ -383,7 +383,7 @@ python -m pytest
 Expected result:
 
 ```text
-11 passed
+100 passed
 ```
 
 ### 3. Run an agent episode
