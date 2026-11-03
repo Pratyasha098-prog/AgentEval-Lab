@@ -237,22 +237,28 @@ All wrong      → 0/3
 Current automated test result:
 
 ```text
-11 passed
+100 passed
 ```
 
 The test suite covers:
 
 ```text
-evaluators/test_edge_cases.py
-evaluators/test_evaluator.py
-tests/test_calendar.py
-tests/test_logger.py
-tests/test_schema.py
+evaluators/test_edge_cases.py     wrong name/date/time, clarification, relative dates
+evaluators/test_evaluator.py      scoring
+tests/test_agent_errors.py        invalid JSON, empty replies, auth/timeout/connection/
+                                  rate-limit/model-unavailable errors, key redaction
+tests/test_run_episode.py         every episode outcome end to end
+tests/test_demo_mode.py           every demo example, without an API key
+tests/test_trajectory_logging.py  log isolation, malformed lines, concurrent writes
+tests/test_summary.py             evaluation summary calculations
+tests/test_app_ui.py              the Streamlit app, run headlessly
+tests/test_calendar.py, tests/test_logger.py, tests/test_schema.py
 ```
 
-The project currently passes:
-
-**11/11 tests**
+**All tests run offline and never consume API credits.** `conftest.py`
+replaces the OpenRouter client with a fake, sets a dummy API key, and
+redirects trajectory logs to a temporary file, so test runs never touch
+`logs/trajectory.jsonl`.
 
 ---
 
@@ -302,28 +308,30 @@ This demonstrates a basic safety principle:
 ```text
 AgentEval-Lab/
 │
-├── agent.py
-│
-├── run_episode.py
-│
-├── evaluation_dataset.py
+├── app.py                 Streamlit interface
+├── agent.py               Live AI agent (OpenRouter)
+├── demo_agent.py          Demo Mode sample responses (simulated)
+├── run_episode.py         Agent → calendar tool → evaluation → log
+├── evaluation_dataset.py  Ground truth
+├── conftest.py            Offline, isolated test setup
 │
 ├── evaluators/
 │   ├── evaluator.py
+│   ├── summary.py
 │   ├── test_evaluator.py
 │   └── test_edge_cases.py
 │
 ├── tools/
-│   └── calendar_tool.py
+│   └── calendar_tool.py   Simulated calendar
 │
 ├── logs/
-│   ├── trajectory.jsonl
+│   ├── trajectory.jsonl   (generated, git-ignored)
 │   └── trajectory_logger.py
 │
 ├── tests/
-│   ├── test_calendar.py
-│   ├── test_logger.py
-│   └── test_schema.py
+│
+├── .streamlit/
+│   └── secrets.toml.example
 │
 └── README.md
 ```
@@ -370,9 +378,11 @@ max_score: 3
 
 ## Running the Project
 
-### 1. Activate the environment
+### 1. Install dependencies
 
-Use the Python environment where the project dependencies are installed.
+```powershell
+pip install -r requirements.txt
+```
 
 ### 2. Run the automated tests
 
@@ -383,10 +393,30 @@ python -m pytest
 Expected result:
 
 ```text
-11 passed
+100 passed
 ```
 
-### 3. Run an agent episode
+### 3. Launch the Streamlit app
+
+```powershell
+python -m streamlit run app.py
+```
+
+The app opens in **Demo Mode**, which needs no API key.
+
+### 4. (Optional) Configure Live AI Mode
+
+Create a `.env` file in the project root (it is git-ignored):
+
+```text
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+# Optional: OPENROUTER_MODEL=nex-agi/nex-n2.5-mini:free
+```
+
+Get a key at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
+Restart the app and select **Live AI Mode**.
+
+### 5. Run an agent episode from the terminal (Live AI Mode)
 
 ```powershell
 python run_episode.py
@@ -403,9 +433,59 @@ Schedule a Team Meeting on 2026-09-10 at 10:00
 
 ## Streamlit Interface
 
-The project also includes a Streamlit interface for interacting with the agent and viewing evaluation results.
+The Streamlit interface shows the full workflow: extracted arguments,
+the calendar tool result, the evaluation score with per-field PASS/FAIL
+against ground truth, a workflow diagram, the trajectory log, and an
+evaluation summary.
 
-The interface is intended to make the evaluation workflow easier to demonstrate without requiring users to interact directly with Python code.
+### Two operating modes
+
+| | 🧪 Demo Mode | 🟢 Live AI Mode |
+| --- | --- | --- |
+| AI responses | Pre-written samples (`demo_agent.py`) | Real OpenRouter model |
+| API key / internet | Not needed | Required |
+| Labelled in the UI as | **SIMULATED RESULT** | **LIVE RESULT** |
+
+Demo Mode includes examples that show a correct extraction (3/3), a
+wrong time and a wrong date (2/3), a request for clarification, an
+incomplete AI response that validation blocks, and a calendar tool
+failure. Demo responses are never presented as live AI output, and a
+failed live request is **never** silently replaced by a simulated one.
+It shows an error message and a **Retry** button instead.
+
+Demo and live scores are logged with their mode, and the evaluation
+summary never mixes them. In both modes the calendar tool is simulated:
+no real calendar is modified.
+
+### Live AI Mode error handling
+
+Invalid or revoked keys, timeouts, connection failures, rate limits,
+unavailable models, insufficient credits, empty replies and invalid
+JSON each produce a specific, readable error message. API keys are
+never displayed, logged, or included in error messages.
+
+---
+
+## Deploying to Streamlit Community Cloud
+
+1. Push the repository to GitHub (`.env` and `.streamlit/secrets.toml`
+   are git-ignored and will not be pushed).
+2. At [share.streamlit.io](https://share.streamlit.io), create an app
+   from the repository with main file **`app.py`**. Dependencies are
+   installed from `requirements.txt`.
+3. **Demo Mode works with no further setup.**
+4. For Live AI Mode, open **App settings → Secrets** and add
+   (see `.streamlit/secrets.toml.example`):
+
+   ```toml
+   OPENROUTER_API_KEY = "sk-or-v1-your-key-here"
+   ```
+
+   Then reboot the app.
+
+Note: Streamlit Cloud storage is temporary, so the trajectory log is
+reset whenever the app restarts or is redeployed. Free OpenRouter models
+also share an account-wide daily request limit.
 
 ---
 

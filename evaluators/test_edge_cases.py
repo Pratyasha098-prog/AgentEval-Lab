@@ -1,3 +1,6 @@
+import json
+from datetime import datetime, timedelta
+
 from evaluators.evaluator import Evaluator
 from agent import extract_event_details
 
@@ -108,7 +111,17 @@ def test_all_arguments_wrong():
     assert score["score"] == 0
 
 
-def test_missing_date_and_time():
+# The two agent tests below use the offline `fake_ai` fixture (see
+# conftest.py) with a realistic model reply, so they check how the agent
+# parses and returns the response without calling OpenRouter.
+
+def test_missing_date_and_time(fake_ai):
+
+    fake_ai.content = json.dumps({
+        "status": "needs_clarification",
+        "missing": ["date", "time"],
+        "message": "Please provide the date and time."
+    })
 
     result = extract_event_details(
         "Schedule a team meeting"
@@ -119,7 +132,16 @@ def test_missing_date_and_time():
     assert "time" in result["missing"]
 
 
-def test_relative_date_tomorrow():
+def test_relative_date_tomorrow(fake_ai):
+
+    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    fake_ai.content = json.dumps({
+        "status": "success",
+        "name": "team meeting",
+        "date": tomorrow,
+        "time": "10:00"
+    })
 
     result = extract_event_details(
         "Schedule a team meeting tomorrow at 10 AM"

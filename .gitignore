@@ -19,3 +19,11 @@ venv/
 
 # Generated logs
 logs/*.jsonl
+logs/*.lock
+
+# Streamlit secrets (only the .example template is committed)
+.streamlit/secrets.toml
+
+# Local tooling / extra virtual environments
+.venv_test/
+.claude/
